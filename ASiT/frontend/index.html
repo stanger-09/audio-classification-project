@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Audio Event Classifier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- ================= NAVBAR ================= -->
+    <header class="navbar">
+      <div class="nav-left">
+        <span class="nav-logo">AEC</span>
+        <span class="nav-title">
+          <span class="nav-highlight">AEC</span> — Audio Event Classifier
+        </span>
+      </div>
+      <nav class="nav-links">
+        <a href="#">Home</a>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+      </nav>
+    </header>
+
+    <!-- ================= HERO ================= -->
+    <section class="hero">
+      <div class="hero-left">
+        <div class="hero-title-row">
+          <div class="hero-icon-circle">🎧</div>
+          <div class="hero-text">
+            <div class="hero-title-main">Audio Event Classifier</div>
+          </div>
+        </div>
+        <p class="hero-caption">
+          Upload an audio file or record to instantly classify sound events with confidence.
+        </p>
+      </div>
+
+      <div class="hero-right">
+        <div class="hero-speaker">🔊</div>
+        <div class="hero-card">
+          <div class="hero-card-label">Sample view</div>
+          <div class="hero-card-inner">
+            <span class="hero-card-title">Preview</span>
+            <span class="hero-card-sub">
+              Attach any backend that works with .wav audio.
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MAIN CARD ================= -->
+    <section class="main-card">
+      <div class="main-grid">
+
+        <!-- ===== LEFT PANEL ===== -->
+        <div class="panel panel-left">
+
+          <!-- Upload -->
+          <div class="upload-top">
+            <div class="upload-box">
+              <label class="file-label">
+                <span>Choose File</span>
+                <input
+                  type="file"
+                  id="fileInput"
+                  class="file-input"
+                  accept=".wav,audio/wav"
+                />
+              </label>
+              <span id="filename" class="file-name">No file chosen</span>
+            </div>
+
+            <button class="btn btn-primary classify-btn" id="classifyBtn">
+              <span class="spinner"></span>
+              <span class="btn-text">Classify</span>
+            </button>
+          </div>
+
+          <!-- Note -->
+          <div class="note-row">
+            <span class="note-bar"></span>
+            <p class="file-note">
+              Note: Only <strong>.wav</strong> audio files are supported.
+              Recording requires HTTPS or <strong>localhost</strong>.
+            </p>
+          </div>
+
+          <!-- Record controls -->
+          <div class="record-row">
+            <div class="record-buttons">
+              <button class="btn record-btn" id="startRecordBtn">
+                <span class="icon-dot">●</span>
+                <span>Record</span>
+              </button>
+              <button class="btn record-btn" id="stopRecordBtn">
+                <span>■</span>
+                <span>Stop</span>
+              </button>
+              <button class="btn record-btn" id="playRecordedBtn">
+                <span>▶</span>
+                <span>Play</span>
+              </button>
+            </div>
+
+            <div class="record-status">
+              <span class="record-indicator" id="recordDot"></span>
+              <span id="recordStatus">Idle</span>
+              <span class="record-timer" id="recordTimer">0:00</span>
+            </div>
+          </div>
+
+          <!-- ✅ LIVE AUDIO DISCLAIMER -->
+          <div id="liveAudioNotice" class="live-notice" style="display:none;">
+            <strong>Live Audio Notice</strong><br />
+            This prediction represents the <b>closest matching label</b>
+            from the trained dataset. Sounds outside the dataset
+            may be mapped to the nearest known class.
+          </div>
+
+          <!-- Progress -->
+          <div class="progress-row">
+            <span id="currentTime">0:00</span>
+            <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1" />
+            <span id="totalTime">0:00</span>
+          </div>
+
+          <!-- Info -->
+          <div class="info-row">
+            <span id="trackTitle">File: none</span>
+            <span id="durationLabel">Duration: 0.0s</span>
+          </div>
+          <div class="info-row">
+            <span id="sourceLabel">Source: none</span>
+          </div>
+
+          <!-- Hidden audio -->
+          <audio id="audioPlayer"></audio>
+        </div>
+
+        <!-- ===== RIGHT PANEL ===== -->
+        <div class="panel panel-right">
+          <div class="gauge-wrapper">
+            <div class="gauge" id="gaugeCircle">
+              <div class="gauge-inner">
+                <div class="gauge-value" id="gaugeValue">--</div>
+                <div class="gauge-label">Confidence</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="prediction-block">
+            <div class="prediction-title">
+              Prediction: <span id="predictionClass">—</span>
+            </div>
+            <div class="prediction-sub" id="predictionConfidence">
+              Confidence: —
+            </div>
+          </div>
+
+          <div class="tips-card">
+            <h4>Quick tips</h4>
+            <ul>
+              <li>Use short clips with one clear sound.</li>
+              <li>Record in quiet surroundings.</li>
+              <li>Keep microphone close to sound source.</li>
+              <li>Click <b>Classify</b> after audio is ready.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SPECTROGRAM ================= -->
+    <section class="spectrogram-card">
+      <div class="spectrogram-header">
+        <div>
+          <h3>Spectrogram</h3>
+          <p>Real-time frequency visualization of the audio.</p>
+        </div>
+        <button class="btn spectrogram-btn" id="spectrogramToggle">
+          <span id="spectrogramToggleText">view spectrogram</span>
+        </button>
+      </div>
+
+      <div class="spectrogram-body" id="spectrogramPanel">
+        <canvas id="spectrogramCanvas"></canvas>
+      </div>
+    </section>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer">
+      AUDIO EVENT CLASSIFIER
+    </footer>
+
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span class="toast-icon">⚠</span>
+    <span id="toastMessage">Message</span>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
