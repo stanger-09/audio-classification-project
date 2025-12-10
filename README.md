@@ -27,3 +27,34 @@ ASiT reduces this to **seconds**, offering fast, accurate, scalable predictions.
 ---
 
 ## 📂 Project Structure
+"""
+ASiT/
+│
+├── src/
+│ ├── inference/
+│ │ ├── preprocess_audio.py
+│ │ ├── predict.py
+│ │ └── pycache/
+│ │
+│ ├── models/
+│ │ ├── wav2vec_classifier.py
+│ │ ├── init.py
+│ │ └── pycache/
+│ │
+│ ├── training/
+│ │ ├── train_epoch.py
+│ │ ├── train_full.py
+│ │ ├── collate_fn.py
+│ │ ├── accuracy.py
+│ │ └── pycache/
+│ │
+│ ├── utils/
+│ │ ├── unzip_data.py
+│ │ └── init.py
+│ │
+│ ├── main_train.py
+│ └── inference_main.py
+│
+├── .gitignore
+└── README.md
+"""
