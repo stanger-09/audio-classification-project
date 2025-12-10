@@ -27,7 +27,7 @@ ASiT reduces this to **seconds**, offering fast, accurate, scalable predictions.
 ---
 
 ## 📂 Project Structure
-"""
+```
 ASiT/
 │
 ├── src/
@@ -57,4 +57,4 @@ ASiT/
 │
 ├── .gitignore
 └── README.md
-"""
+```
