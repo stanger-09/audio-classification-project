@@ -1,5 +1,5 @@
 # ---------------- CONFIG ----------------
-DATASET_ROOT = r"C:\Users\SAKETH BUDARAPU\Downloads\archive (2)\augmented-audio"
+DATASET_ROOT = r""
 RESAMPLE = 16000
 SECONDS = 5
 TOTAL_SAMPLES = RESAMPLE * SECONDS

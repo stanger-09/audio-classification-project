@@ -425,8 +425,9 @@ async function uploadAndPredict(fileBlob, filename = "clip.wav") {
     const probPercent = (prob * 100).toFixed(1);
 
     predictionConfidence.textContent = `Confidence: ${probPercent}%`;
-    gaugeCircle.style.setProperty("--confidence", probPercent);
-    gaugeValue.textContent = `${Math.round(prob * 100)}%`;
+    const confidencePercent = Math.round(prob * 100);
+    gaugeCircle.style.setProperty("--confidence", confidencePercent);
+    gaugeValue.textContent = `${confidencePercent}%`;
   } catch (err) {
     console.error(err);
     classifyBtn.classList.remove("loading");

@@ -1,122 +1,178 @@
-# api/app.py
-from pathlib import Path
-import sys
+"""
+Flask Backend for Audio Event Classifier
+✔ Works on OLD torchaudio
+✔ No TorchCodec
+✔ Windows safe
+"""
+
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchaudio
+import soundfile as sf
+from transformers import Wav2Vec2Model, Wav2Vec2Processor
 import os
 import tempfile
 
-# -------------------- Make project root & src importable --------------------
-# ROOT = ASiT/ (parent of api/)
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
+# ================= CONFIG =================
+CHECKPOINT_PATH = r"C:\Users\ADMIN\OneDrive\Desktop\ASiT\ASiT\best_wav2vec_classifier.pt"
 
-# Put project root first so "import src.config" works
-sys.path.insert(0, str(ROOT))
+RESAMPLE_RATE = 16000
+AUDIO_DURATION = 5
+TOTAL_SAMPLES = RESAMPLE_RATE * AUDIO_DURATION
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+WAV2VEC_MODEL = "facebook/wav2vec2-base"
 
-# Also ensure src/ itself is on sys.path (some modules may import without "src.")
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-# ---------------------------------------------------------------------------
+# ================= MODEL =================
+class Wav2VecClassifier(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.processor = Wav2Vec2Processor.from_pretrained(WAV2VEC_MODEL)
+        self.backbone = Wav2Vec2Model.from_pretrained(WAV2VEC_MODEL)
 
-import torch
-from flask import Flask, request, jsonify, send_from_directory
-from werkzeug.utils import secure_filename
+        hidden_dim = self.backbone.config.hidden_size
+        self.attention = nn.Linear(hidden_dim, 1)
+        self.classifier = nn.Linear(hidden_dim, num_classes)
 
-# Now safe to import your project modules
-from src.config import DEVICE, WAV2VEC_MODEL, DATASET_ROOT
-from src.models.wav2vec_classifier import W2VClassifier
-from src.inference.preprocess_audio import load_and_prepare_audio  # returns tensor shape (1, samples)
+    def forward(self, x):
+        hidden = self.backbone(x).last_hidden_state
+        attn = torch.softmax(self.attention(hidden), dim=1)
+        pooled = (hidden * attn).sum(dim=1)
+        return self.classifier(pooled)
 
-# -------------------- Configuration --------------------
-CHECKPOINT = str(ROOT / "best_wav2vec_classifier.pt")  # ensure this exists
-FRONTEND_DIR = str(ROOT / "frontend")
-ALLOWED_EXT = {".wav"}  # supported by soundfile
-app = Flask(__name__, static_folder=FRONTEND_DIR)
-app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB
-# -------------------------------------------------------
+# ================= CHECKPOINT LOADER =================
+def load_checkpoint_with_compatibility(path):
+    ckpt = torch.load(path, map_location=DEVICE)
+    print("🔍 Checkpoint keys:", ckpt.keys())
 
-# Validate checkpoint
-if not Path(CHECKPOINT).exists():
-    raise FileNotFoundError(f"Checkpoint not found: {CHECKPOINT}. Place it in {ROOT}")
+    if "backbone" in ckpt:
+        print("⚠ OLD checkpoint detected")
+        return {
+            "backbone": ckpt["backbone"],
+            "classifier": ckpt["classifier"],
+            "attention": ckpt.get("attn"),
+            "class_names": ckpt["class_names"],
+        }
 
-# Load class names from DATASET_ROOT
-dataset_root = Path(DATASET_ROOT)
-CLASS_NAMES = sorted([d.name for d in dataset_root.iterdir() if d.is_dir()])
-if len(CLASS_NAMES) == 0:
-    raise RuntimeError(f"No class folders found under DATASET_ROOT={DATASET_ROOT}")
+    raise ValueError("Unsupported checkpoint format")
 
-# Load model once at startup
-num_classes = len(CLASS_NAMES)
-model = W2VClassifier(WAV2VEC_MODEL, num_classes=num_classes).to(DEVICE)
-ckpt = torch.load(CHECKPOINT, map_location=DEVICE)
-model.backbone.load_state_dict(ckpt["backbone"])
-model.classifier.load_state_dict(ckpt["classifier"])
-model.eval()
+# ================= LOAD MODEL =================
+print("\n🚀 LOADING MODEL\n")
 
+model = None
+CLASS_NAMES = []
 
-def allowed_file(filename: str) -> bool:
-    return Path(filename).suffix.lower() in ALLOWED_EXT
+try:
+    ckpt = load_checkpoint_with_compatibility(CHECKPOINT_PATH)
 
+    CLASS_NAMES = ckpt["class_names"]
+    num_classes = len(CLASS_NAMES)
+
+    model = Wav2VecClassifier(num_classes).to(DEVICE)
+    model.backbone.load_state_dict(ckpt["backbone"])
+    model.classifier.load_state_dict(ckpt["classifier"])
+
+    if ckpt["attention"] is not None:
+        model.attention.load_state_dict(ckpt["attention"])
+
+    model.eval()
+
+    print("✅ Model loaded")
+    for i, c in enumerate(CLASS_NAMES):
+        print(f"{i:2d}. {c}")
+
+except Exception as e:
+    print("❌ Model load failed:", e)
+
+# ================= AUDIO PREPROCESS =================
+def preprocess_audio(file_path):
+    try:
+        print("🎵 Reading audio using soundfile")
+
+        waveform, sr = sf.read(file_path)
+        waveform = torch.tensor(waveform, dtype=torch.float32)
+
+        # Stereo → mono
+        if waveform.ndim == 2:
+            waveform = waveform.mean(dim=1)
+
+        # Resample
+        if sr != RESAMPLE_RATE:
+            waveform = torchaudio.transforms.Resample(sr, RESAMPLE_RATE)(waveform)
+
+        # Normalize
+        waveform = waveform / (waveform.abs().max() + 1e-9)
+
+        # Pad / trim
+        if waveform.size(0) < TOTAL_SAMPLES:
+            waveform = F.pad(waveform, (0, TOTAL_SAMPLES - waveform.size(0)))
+        else:
+            waveform = waveform[:TOTAL_SAMPLES]
+
+        return waveform.unsqueeze(0)
+
+    except Exception as e:
+        print("❌ Audio error:", e)
+        return None
+
+# ================= PREDICTION =================
+def predict_audio(audio_tensor):
+    with torch.no_grad():
+        audio_tensor = audio_tensor.to(DEVICE)
+        logits = model(audio_tensor)
+        probs = torch.softmax(logits, dim=1)
+        idx = probs.argmax(dim=1).item()
+        conf = probs[0, idx].item()
+
+    return CLASS_NAMES[idx], conf
+
+# ================= FLASK APP =================
+app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
-def index():
-    return send_from_directory(FRONTEND_DIR, "index.html")
-
-
-@app.route("/<path:filename>")
-def static_files(filename):
-    return send_from_directory(FRONTEND_DIR, filename)
-
+def home():
+    return render_template("index.html")
 
 @app.route("/predict", methods=["POST"])
-def predict_endpoint():
-    """
-    Expects multipart/form-data with key 'file'.
-    Returns JSON: { prediction, top_prob, probs, class_names }
-    """
+def predict():
+    if model is None:
+        return jsonify({"error": "Model not loaded"}), 500
+
     if "file" not in request.files:
-        return jsonify({"error": "no file part"}), 400
+        return jsonify({"error": "No file uploaded"}), 400
 
-    f = request.files["file"]
-    if f.filename == "":
-        return jsonify({"error": "empty filename"}), 400
+    file = request.files["file"]
 
-    filename = secure_filename(f.filename)
-    if not allowed_file(filename):
-        return jsonify({"error": f"file type not allowed: {filename}"}), 400
-
-    # save to a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=Path(filename).suffix) as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp_path = tmp.name
-        f.save(tmp_path)
+        file.save(tmp_path)
 
-    try:
-        # preprocess -> torch tensor (1, samples)
-        wav_tensor = load_and_prepare_audio(tmp_path).to(DEVICE)
+    audio = preprocess_audio(tmp_path)
+    os.unlink(tmp_path)
 
-        with torch.no_grad():
-            logits = model(wav_tensor)
-            probs = torch.softmax(logits, dim=1)[0].cpu().numpy()
+    if audio is None:
+        return jsonify({"error": "Audio processing failed"}), 500
 
-        top_idx = int(probs.argmax())
-        prediction = CLASS_NAMES[top_idx]
-        resp = {
-            "prediction": prediction,
-            "top_prob": float(probs[top_idx]),
-            "probs": [float(p) for p in probs],
-            "class_names": CLASS_NAMES,
-        }
-        return jsonify(resp)
-    except Exception as e:
-        # return error message (useful for debugging during development)
-        return jsonify({"error": str(e)}), 500
-    finally:
-        # cleanup temp file
-        try:
-            os.remove(tmp_path)
-        except Exception:
-            pass
+    label, confidence = predict_audio(audio)
 
+    return jsonify({
+        "prediction": label,
+        "top_prob": float(confidence),
+        "confidence_percent": f"{confidence*100:.2f}%"
+    })
 
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "device": str(DEVICE),
+        "classes": CLASS_NAMES
+    })
+
+# ================= MAIN =================
 if __name__ == "__main__":
-    # dev server: localhost only. Use host="0.0.0.0" to expose on LAN.
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    print("\n🌐 Server running at http://localhost:5000\n")
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)

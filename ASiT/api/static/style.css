@@ -468,12 +468,19 @@ body {
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, #020617 0, #020617 56%, transparent 56%),
-    conic-gradient(var(--accent-strong) calc(var(--confidence) * 1%), #020617 0);
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  /* NEW: Use background-image instead */
+  background-image: 
+    radial-gradient(circle at 50% 50%, #020617 0%, #020617 56%, transparent 56%),
+    conic-gradient(
+      var(--accent-strong) 0deg,
+      var(--accent-strong) calc(var(--confidence) * 3.6deg),
+      #020617 calc(var(--confidence) * 3.6deg)
+    );
 }
 
 .gauge-inner {

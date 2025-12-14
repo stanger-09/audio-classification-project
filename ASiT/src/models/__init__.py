@@ -1,5 +1,5 @@
-from .wav2vec_classifier import W2VClassifier
+from ASiT.src.models.wav2vec_classifier import Wav2VecClassifier 
 
 __all__ = [
-    "W2VClassifier",
+    "Wav2VecClassifier",
 ]
