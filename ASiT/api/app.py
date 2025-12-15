@@ -1,7 +1,8 @@
 """
 Flask Backend for Audio Event Classifier
+✔ Correct label mapping
+✔ Matches NEW training architecture
 ✔ Works on OLD torchaudio
-✔ No TorchCodec
 ✔ Windows safe
 """
 
@@ -22,66 +23,87 @@ CHECKPOINT_PATH = r"C:\Users\ADMIN\OneDrive\Desktop\ASiT\ASiT\best_wav2vec_class
 RESAMPLE_RATE = 16000
 AUDIO_DURATION = 5
 TOTAL_SAMPLES = RESAMPLE_RATE * AUDIO_DURATION
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 WAV2VEC_MODEL = "facebook/wav2vec2-base"
 
 # ================= MODEL =================
 class Wav2VecClassifier(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, dropout=0.3):
         super().__init__()
         self.processor = Wav2Vec2Processor.from_pretrained(WAV2VEC_MODEL)
         self.backbone = Wav2Vec2Model.from_pretrained(WAV2VEC_MODEL)
 
         hidden_dim = self.backbone.config.hidden_size
+
         self.attention = nn.Linear(hidden_dim, 1)
-        self.classifier = nn.Linear(hidden_dim, num_classes)
+        self.batch_norm = nn.BatchNorm1d(hidden_dim)
+        self.dropout = nn.Dropout(dropout)
+
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, num_classes)
+        )
 
     def forward(self, x):
         hidden = self.backbone(x).last_hidden_state
-        attn = torch.softmax(self.attention(hidden), dim=1)
-        pooled = (hidden * attn).sum(dim=1)
+        weights = torch.softmax(self.attention(hidden), dim=1)
+        pooled = (hidden * weights).sum(dim=1)
+
+        pooled = self.batch_norm(pooled)
+        pooled = self.dropout(pooled)
+
         return self.classifier(pooled)
 
 # ================= CHECKPOINT LOADER =================
-def load_checkpoint_with_compatibility(path):
+def load_checkpoint(path):
     ckpt = torch.load(path, map_location=DEVICE)
-    print("🔍 Checkpoint keys:", ckpt.keys())
 
-    if "backbone" in ckpt:
-        print("⚠ OLD checkpoint detected")
-        return {
-            "backbone": ckpt["backbone"],
-            "classifier": ckpt["classifier"],
-            "attention": ckpt.get("attn"),
-            "class_names": ckpt["class_names"],
-        }
+    required_keys = [
+        "backbone",
+        "classifier",
+        "attn",
+        "batch_norm",
+        "class_names",
+        "class_to_idx",
+        "num_classes"
+    ]
 
-    raise ValueError("Unsupported checkpoint format")
+    for k in required_keys:
+        if k not in ckpt:
+            raise ValueError(f"Missing key in checkpoint: {k}")
+
+    return ckpt
 
 # ================= LOAD MODEL =================
 print("\n🚀 LOADING MODEL\n")
 
 model = None
-CLASS_NAMES = []
+IDX_TO_CLASS = {}
 
 try:
-    ckpt = load_checkpoint_with_compatibility(CHECKPOINT_PATH)
+    ckpt = load_checkpoint(CHECKPOINT_PATH)
 
-    CLASS_NAMES = ckpt["class_names"]
-    num_classes = len(CLASS_NAMES)
+    CLASS_TO_IDX = ckpt["class_to_idx"]
+    IDX_TO_CLASS = {v: k for k, v in CLASS_TO_IDX.items()}
+    num_classes = ckpt["num_classes"]
 
     model = Wav2VecClassifier(num_classes).to(DEVICE)
+
     model.backbone.load_state_dict(ckpt["backbone"])
     model.classifier.load_state_dict(ckpt["classifier"])
-
-    if ckpt["attention"] is not None:
-        model.attention.load_state_dict(ckpt["attention"])
+    model.attention.load_state_dict(ckpt["attn"])
+    model.batch_norm.load_state_dict(ckpt["batch_norm"])
 
     model.eval()
+    model.backbone.eval()
 
-    print("✅ Model loaded")
-    for i, c in enumerate(CLASS_NAMES):
-        print(f"{i:2d}. {c}")
+    print("✅ Model loaded successfully")
+    print("📚 Classes:")
+    for i in sorted(IDX_TO_CLASS.keys()):
+        print(f"{i:2d}. {IDX_TO_CLASS[i]}")
 
 except Exception as e:
     print("❌ Model load failed:", e)
@@ -89,12 +111,10 @@ except Exception as e:
 # ================= AUDIO PREPROCESS =================
 def preprocess_audio(file_path):
     try:
-        print("🎵 Reading audio using soundfile")
-
         waveform, sr = sf.read(file_path)
         waveform = torch.tensor(waveform, dtype=torch.float32)
 
-        # Stereo → mono
+        # Stereo → Mono
         if waveform.ndim == 2:
             waveform = waveform.mean(dim=1)
 
@@ -102,10 +122,9 @@ def preprocess_audio(file_path):
         if sr != RESAMPLE_RATE:
             waveform = torchaudio.transforms.Resample(sr, RESAMPLE_RATE)(waveform)
 
-        # Normalize
-        waveform = waveform / (waveform.abs().max() + 1e-9)
+        # ❌ NO NORMALIZATION (important for Wav2Vec2)
 
-        # Pad / trim
+        # Pad / Trim
         if waveform.size(0) < TOTAL_SAMPLES:
             waveform = F.pad(waveform, (0, TOTAL_SAMPLES - waveform.size(0)))
         else:
@@ -114,7 +133,7 @@ def preprocess_audio(file_path):
         return waveform.unsqueeze(0)
 
     except Exception as e:
-        print("❌ Audio error:", e)
+        print("❌ Audio preprocessing error:", e)
         return None
 
 # ================= PREDICTION =================
@@ -123,10 +142,11 @@ def predict_audio(audio_tensor):
         audio_tensor = audio_tensor.to(DEVICE)
         logits = model(audio_tensor)
         probs = torch.softmax(logits, dim=1)
+
         idx = probs.argmax(dim=1).item()
         conf = probs[0, idx].item()
 
-    return CLASS_NAMES[idx], conf
+    return IDX_TO_CLASS[idx], conf
 
 # ================= FLASK APP =================
 app = Flask(__name__)
@@ -161,7 +181,7 @@ def predict():
     return jsonify({
         "prediction": label,
         "top_prob": float(confidence),
-        "confidence_percent": f"{confidence*100:.2f}%"
+        "confidence_percent": f"{confidence * 100:.2f}%"
     })
 
 @app.route("/health")
@@ -169,7 +189,8 @@ def health():
     return jsonify({
         "status": "ok",
         "device": str(DEVICE),
-        "classes": CLASS_NAMES
+        "num_classes": len(IDX_TO_CLASS),
+        "classes": list(IDX_TO_CLASS.values())
     })
 
 # ================= MAIN =================
