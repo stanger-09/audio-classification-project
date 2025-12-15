@@ -30,31 +30,53 @@ ASiT reduces this to **seconds**, offering fast, accurate, scalable predictions.
 ```
 ASiT/
 │
-├── src/
-│ ├── inference/
-│ │ ├── preprocess_audio.py
-│ │ ├── predict.py
-│ │ └── pycache/
-│ │
-│ ├── models/
-│ │ ├── wav2vec_classifier.py
-│ │ ├── init.py
-│ │ └── pycache/
-│ │
-│ ├── training/
-│ │ ├── train_epoch.py
-│ │ ├── train_full.py
-│ │ ├── collate_fn.py
-│ │ ├── accuracy.py
-│ │ └── pycache/
-│ │
-│ ├── utils/
-│ │ ├── unzip_data.py
-│ │ └── init.py
-│ │
-│ ├── main_train.py
-│ └── inference_main.py
+├── api/                         # Flask backend (deployment / demo)
+│   ├── app.py                   # Flask app entry point
+│   ├── requirements.txt         # API dependencies
+│   └── templates/
+│       └── index.html           # Frontend UI for audio upload
 │
-├── .gitignore
-└── README.md
+├── src/                         # Core ML codebase
+│   │
+│   ├── models/                  # Model architectures
+│   │   ├── wav2vec_classifier.py
+│   │   │   ├── Wav2VecClassifier
+│   │   │   └── Attention pooling + classifier head
+│   │   ├── __init__.py
+│   │   └── __pycache__/
+│   │
+│   ├── training/                # Training pipeline
+│   │   ├── train_epoch.py       # One epoch training logic
+│   │   ├── train_full.py        # Full training loop
+│   │   ├── collate_fn.py        # Padding & batch handling
+│   │   ├── accuracy.py          # Accuracy calculation
+│   │   └── __pycache__/
+│   │
+│   ├── inference/               # Inference pipeline
+│   │   ├── preprocess_audio.py  # Resampling, padding, normalization
+│   │   ├── predict.py           # Model inference logic
+│   │   └── __pycache__/
+│   │
+│   ├── utils/                   # Helper utilities
+│   │   ├── dataset.py           # Custom Dataset class
+│   │   ├── unzip_data.py        # Dataset extraction
+│   │   └── __init__.py
+│   │
+│   ├── main_train.py             # Training entry point
+│   └── inference_main.py         # Standalone inference runner
+│
+├── checkpoints/                 # Saved models
+│   ├── best_wav2vec_classifier.pt
+│   └── best_wav2vec_22class_classifier.pt
+│
+├── data/                        # (Optional local data)
+│   └── README.md
+│
+├── notebooks/                   # Experiments (optional)
+│   └── analysis.ipynb
+│
+├── requirements.txt             # Project-wide dependencies
+├── README.md                    # Project documentation
+└── .gitignore                   # Ignore cache, data, checkpoints
+
 ```
