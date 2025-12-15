@@ -85,14 +85,16 @@ ASiT/
 ├── requirements.txt
 └── README.md
 ```
-📊 Results
+ --
+## 📊 Results
 
 The model learns high-level semantic representations of audio events.
 Attention pooling improves robustness for variable-length audio and noisy conditions.
 
 Performance varies based on dataset split and training configuration.
 
-##🧠 Key Concepts Used
+--
+## 🧠 Key Concepts Used
 
 -Wav2Vec2
 
@@ -104,7 +106,8 @@ Performance varies based on dataset split and training configuration.
 
 -Transfer Learning
 
-##⚠️ Limitations
+--
+## ⚠️ Limitations
 
 -Performance depends on dataset quality
 
@@ -113,7 +116,7 @@ Performance varies based on dataset split and training configuration.
 -Single-head attention pooling
 
 -No explicit noise-robust training
-
+--
 ##🔮 Future Improvements
 
 -Multi-head attention pooling
