@@ -122,7 +122,7 @@ Performance varies based on dataset split and training configuration.
 
 ---
 
-##🔮 Future Improvements
+## 🔮 Future Improvements
 
 -Multi-head attention pooling
 
