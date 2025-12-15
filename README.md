@@ -32,6 +32,7 @@ This project overcomes those limitations by:
 
 ### Pipeline Overview
 
+```
 Audio Waveform (16 kHz)
 ↓
 Wav2Vec2 Feature Encoder
@@ -46,6 +47,7 @@ Linear Classifier + Softmax
 ↓
 Predicted Audio Class
 
+```
 
 ### Key Components
 
@@ -69,7 +71,7 @@ Predicted Audio Class
 ---
 
 ## 📂 Project Structure
-
+```
 ASiT/
 ├── api/ # Flask backend
 ├── src/
@@ -82,7 +84,7 @@ ASiT/
 ├── checkpoints/ # Saved model weights
 ├── requirements.txt
 └── README.md
-
+```
 📊 Results
 
 The model learns high-level semantic representations of audio events.
@@ -90,36 +92,36 @@ Attention pooling improves robustness for variable-length audio and noisy condit
 
 Performance varies based on dataset split and training configuration.
 
-🧠 Key Concepts Used
+##🧠 Key Concepts Used
 
-Wav2Vec2
+-Wav2Vec2
 
-Self-Supervised Learning
+-Self-Supervised Learning
 
-Attention-Based Pooling
+-Attention-Based Pooling
 
-End-to-End Audio Classification
+-End-to-End Audio Classification
 
-Transfer Learning
+-Transfer Learning
 
-⚠️ Limitations
+##⚠️ Limitations
 
-Performance depends on dataset quality
+-Performance depends on dataset quality
 
-Limited data augmentation
+-Limited data augmentation
 
-Single-head attention pooling
+-Single-head attention pooling
 
-No explicit noise-robust training
+-No explicit noise-robust training
 
-🔮 Future Improvements
+##🔮 Future Improvements
 
-Multi-head attention pooling
+-Multi-head attention pooling
 
-Advanced audio data augmentation
+-Advanced audio data augmentation
 
-Larger pretrained backbones
+-Larger pretrained backbones
 
-Audio-visual multimodal learning
+-Audio-visual multimodal learning
 
 Dockerized deployment
