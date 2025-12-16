@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>About – Audio Event Classifier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Main stylesheet (same as Home) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+  <!-- ================= NAVBAR (EXACT SAME AS HOME) ================= -->
+  <header class="navbar">
+    <div class="nav-left">
+      <span class="nav-logo">AEC</span>
+      <span class="nav-title">
+        <span class="nav-highlight">AEC</span> — Audio Event Classifier
+      </span>
+    </div>
+
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="#">Contact</a>
+      <a href="#" id="logoutBtn" style="display:none;">Logout</a>
+    </nav>
+  </header>
+
+  <!-- ================= PAGE CONTENT WRAPPER ================= -->
+  <!-- This ensures content starts BELOW the fixed navbar -->
+  <div class="page-content">
+
+    <!-- ================= ABOUT SECTION ================= -->
+    <section class="about-section">
+      <div class="about-card">
+        <div class="markdown-body">
+          {{ about_content | safe }}
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ================= SCRIPTS ================= -->
+  <!-- Same JS as Home so logout & auth state work -->
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

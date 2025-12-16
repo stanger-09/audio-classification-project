@@ -1,4 +1,57 @@
-// ===== ELEMENT REFERENCES =====
+// ================= GOOGLE LOGIN (WORKING FOR SURE) =================
+
+function handleCredentialResponse(response) {
+  if (!response.credential) {
+    alert("Login failed");
+    return;
+  }
+
+  localStorage.setItem("google_token", response.credential);
+
+  document.getElementById("login-section").style.display = "none";
+  document.getElementById("main-ui").style.display = "block";
+}
+
+// Make callback globally visible (REQUIRED)
+window.handleCredentialResponse = handleCredentialResponse;
+
+function renderGoogleButton() {
+  if (!window.google || !google.accounts || !google.accounts.id) {
+    setTimeout(renderGoogleButton, 200);
+    return;
+  }
+
+  google.accounts.id.initialize({
+    client_id: "675447439552-rd8jmd0vahdk7s2j958elo4jt0qseo6a.apps.googleusercontent.com",
+    callback: handleCredentialResponse
+  });
+
+  google.accounts.id.renderButton(
+    document.getElementById("googleBtn"),
+    {
+      theme: "outline",
+      size: "large"
+    }
+  );
+}
+
+window.addEventListener("load", () => {
+  const token = localStorage.getItem("google_token");
+
+  if (token) {
+    document.getElementById("login-section").style.display = "none";
+    document.getElementById("main-ui").style.display = "block";
+  } else {
+    document.getElementById("main-ui").style.display = "none";
+    renderGoogleButton(); // 🔥 THIS LINE WAS MISSING BEFORE
+  }
+});
+
+// Logout
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  localStorage.removeItem("google_token");
+  location.reload();
+});
 let isLiveRecording = false;
 const liveNotice = document.getElementById("liveAudioNotice");
 const fileInput = document.getElementById("fileInput");

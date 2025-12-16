@@ -44,11 +44,13 @@ body {
 /* NAVBAR */
 
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
 }
+
 
 .nav-left {
   display: flex;
@@ -686,3 +688,184 @@ body {
   font-size: 0.78rem;
   line-height: 1.4;
 }
+#login-section h2 {
+  margin-bottom: 20px;
+  color: #e5e7eb;
+}
+/* Logout button styled like nav links */
+.nav-links a#logoutBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nav-links a#logoutBtn:hover {
+  color: #e5e7eb;
+}
+/* ===== Markdown (README) Styling for About Page ===== */
+
+.markdown-body {
+  max-width: 100%;
+  padding: 40px;
+  color: #e5e7eb;
+  line-height: 1.7;
+}
+
+/* Headings */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  margin-top: 32px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.markdown-body h1 {
+  font-size: 2rem;
+}
+
+.markdown-body h2 {
+  font-size: 1.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 6px;
+}
+
+.markdown-body h3 {
+  font-size: 1.2rem;
+}
+
+/* Paragraphs */
+.markdown-body p {
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+
+/* Lists */
+.markdown-body ul {
+  margin-left: 20px;
+  margin-bottom: 16px;
+}
+
+.markdown-body li {
+  margin-bottom: 6px;
+}
+
+/* Code blocks */
+.markdown-body pre {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 16px;
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 0.9rem;
+}
+
+.markdown-body code {
+  color: #93c5fd;
+}
+
+/* Horizontal rules */
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin: 40px 0;
+}
+  /* ===== About Page Layout Fix ===== */
+
+.about-section {
+  display: flex;
+  justify-content: center;
+  padding: 120px 0 60px;
+}
+
+
+.about-card {
+  width: 100%;
+  max-width: 1100px;          /* same feel as Home */
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+/* Markdown container inside card */
+.about-card .markdown-body {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px;
+}
+.page-content {
+  padding-top: 110px;
+}
+/* ================= LOGIN SCREEN ================= */
+
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #0b1f3a, #020617);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.login-box {
+  background: rgba(15, 23, 42, 0.85);
+  padding: 40px 50px;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.login-box h2 {
+  color: #e5e7eb;
+  margin-bottom: 25px;
+  font-weight: 500;
+}
+/* ================= LOGIN SCREEN ================= */
+
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #0b1f3a, #020617);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.login-box {
+  background: rgba(15, 23, 42, 0.9);
+  padding: 40px 50px;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.login-box h2 {
+  color: #e5e7eb;
+  margin-bottom: 25px;
+  font-weight: 500;
+}
+/* ===== FIX LOGIN VISIBILITY ===== */
+#login-section {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #0b1f3a, #020617);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#login-section > div {
+  background: rgba(15, 23, 42, 0.9);
+  padding: 40px 50px;
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
